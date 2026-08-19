@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#dff4ff" />
+    <title>비올까? ☂️</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="/css/style.css" />
+  </head>
+  <body>
+    <main class="weather-app">
+      <section class="weather-card" aria-labelledby="weather-title">
+        <header class="weather-header">
+          <div>
+            <p class="weather-eyebrow">초단기 강수 타임라인</p>
+            <h1 id="weather-title" class="weather-title">비올까? <span aria-hidden="true">☂️</span></h1>
+          </div>
+          <button type="button" class="location-button" id="location-button">
+            <span aria-hidden="true">⌖</span>
+            <span id="location-text">내 위치 찾기</span>
+          </button>
+        </header>
+
+        <div class="weather-hero" id="weather-hero">
+          <div class="sky-scene" aria-hidden="true">
+            <span class="cloud cloud--back"></span>
+            <span class="cloud cloud--front"></span>
+            <div class="otter" id="otter">
+              <span class="otter-ear otter-ear--left"></span>
+              <span class="otter-ear otter-ear--right"></span>
+              <span class="otter-face">
+                <span class="otter-eye otter-eye--left"></span>
+                <span class="otter-eye otter-eye--right"></span>
+                <span class="otter-nose"></span>
+              </span>
+              <span class="umbrella" id="umbrella">☂️</span>
+            </div>
+            <div class="rain-drops" id="rain-drops"></div>
+          </div>
+
+          <div class="weather-message">
+            <p class="weather-status" id="weather-status">날씨를 보러 갈까요?</p>
+            <p class="weather-description" id="weather-description">현재 위치를 알려주면 앞으로 비가 언제 오고 그치는지 찾아볼게요.</p>
+          </div>
+        </div>
+
+        <section class="rain-summary" aria-label="강수 요약">
+          <div class="summary-item">
+            <span class="summary-label">비 시작</span>
+            <strong class="summary-value" id="rain-start">-</strong>
+          </div>
+          <div class="summary-divider" aria-hidden="true"></div>
+          <div class="summary-item">
+            <span class="summary-label">비 그침</span>
+            <strong class="summary-value" id="rain-end">-</strong>
+          </div>
+          <div class="summary-divider" aria-hidden="true"></div>
+          <div class="summary-item">
+            <span class="summary-label">우산</span>
+            <strong class="summary-value" id="umbrella-status">기다리는 중</strong>
+          </div>
+        </section>
+
+        <section class="timeline-section" aria-labelledby="timeline-title">
+          <div class="section-heading">
+            <div>
+              <h2 id="timeline-title">시간별 하늘</h2>
+              <p>구름을 옆으로 슥슥 밀어보세요 ☁️</p>
+            </div>
+            <span class="timeline-range">앞으로 12시간</span>
+          </div>
+
+          <div class="timeline" id="timeline" tabindex="0" aria-label="시간별 날씨 예보">
+            <div class="timeline-loading">
+              <span class="loading-cloud">☁️</span>
+              <span>위치를 찾으면 구름이 나타나요</span>
+            </div>
+          </div>
+        </section>
+
+        <p class="weather-note" id="weather-note">
+          기상청 단기예보 조회서비스를 사용해요. 실제 강수 시각은 지역과 관측 상황에 따라 달라질 수 있어요.
+        </p>
+        <section class="dev-guide" id="dev-guide" hidden aria-labelledby="dev-guide-title">
+          <div class="dev-guide__header">
+            <div>
+              <span class="dev-guide__badge">DEV</span>
+              <h2 id="dev-guide-title" class="dev-guide__title">날씨 미리보기 가이드</h2>
+            </div>
+            <p class="dev-guide__description">서울 좌표를 기준으로 원하는 날씨 상태를 강제로 확인할 수 있어요.</p>
+          </div>
+          <div class="dev-guide__buttons" role="group" aria-label="날씨 미리보기 선택">
+            <button type="button" class="dev-guide__button is-active" data-weather-mode="api">실제 API</button>
+            <button type="button" class="dev-guide__button" data-weather-mode="sunny">☀️ 맑음</button>
+            <button type="button" class="dev-guide__button" data-weather-mode="cloudy">☁️ 흐림</button>
+            <button type="button" class="dev-guide__button" data-weather-mode="rain">🌧️ 비</button>
+            <button type="button" class="dev-guide__button" data-weather-mode="shower">🌦️ 소나기</button>
+            <button type="button" class="dev-guide__button" data-weather-mode="snow">❄️ 눈</button>
+          </div>
+          <p class="dev-guide__note"><code>DEV_MODE = false</code>로 바꾸면 이 가이드와 서울 고정 모드가 함께 꺼져요.</p>
+        </section>
+
+      </section>
+    </main>
+
+    <script src="/js/app.js"></script>
+  </body>
+</html>
