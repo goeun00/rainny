@@ -19,8 +19,10 @@ module.exports = async function handler(req, res) {
     const now = new Date(Date.now() + 9 * 60 * 60 * 1000);
     const ultraBase = getUltraBase(now);
     const villageBase = getVillageBase(now);
+    const currentBase = getCurrentBase(now);
 
-    const [ultraItems, villageItems] = await Promise.all([
+    const [currentItems, ultraItems, villageItems] = await Promise.all([
+      fetchKma("getUltraSrtNcst", serviceKey, currentBase, grid, 100),
       fetchKma("getUltraSrtFcst", serviceKey, ultraBase, grid, 100),
       fetchKma("getVilageFcst", serviceKey, villageBase, grid, 300),
     ]);
@@ -28,6 +30,19 @@ module.exports = async function handler(req, res) {
     const ultraHours = normalizeItems(ultraItems, "ultra");
     const villageHours = normalizeItems(villageItems, "village");
     const hours = mergeForecasts(ultraHours, villageHours, now, 12);
+    const current = normalizeCurrent(currentItems);
+
+    if (hours.length) {
+      hours[0] = {
+        ...hours[0],
+        temperature: current.temperature ?? hours[0].temperature,
+        rainMm: current.rainMm ?? hours[0].rainMm,
+        rainText: current.rainText ?? hours[0].rainText,
+        pty: current.pty ?? hours[0].pty,
+        source: "current",
+      };
+    }
+
     const summary = makeSummary(hours);
 
     res.setHeader("Cache-Control", "s-maxage=300, stale-while-revalidate=300");
@@ -50,7 +65,6 @@ async function fetchKma(endpoint, serviceKey, base, grid, numOfRows) {
     ny: String(grid.ny),
   });
 
-  // 공공데이터포털의 'Decoding' 일반인증키를 환경변수에 넣는 것을 기준으로 한다.
   const response = await fetch(KMA_BASE + "/" + endpoint + "?" + params.toString());
   const text = await response.text();
 
@@ -69,6 +83,34 @@ async function fetchKma(endpoint, serviceKey, base, grid, numOfRows) {
   }
 
   return data.response.body?.items?.item || [];
+}
+
+function normalizeCurrent(items) {
+  const current = {
+    temperature: null,
+    rainMm: null,
+    rainText: null,
+    pty: null,
+  };
+
+  items.forEach((item) => {
+    const value = item.obsrValue;
+
+    if (item.category === "T1H") {
+      current.temperature = numberOrNull(value);
+    }
+
+    if (item.category === "PTY") {
+      current.pty = numberOrNull(value);
+    }
+
+    if (item.category === "RN1") {
+      current.rainText = normalizeRainText(value);
+      current.rainMm = parseRainMm(value);
+    }
+  });
+
+  return current;
 }
 
 function normalizeItems(items, source) {
@@ -92,6 +134,7 @@ function normalizeItems(items, source) {
     const row = map.get(key);
     const value = item.fcstValue;
     if (item.category === "PTY") row.pty = numberOrZero(value);
+    if (item.category === "POP") row.pop = numberOrZero(value);
     if (item.category === "SKY") row.sky = numberOrZero(value);
     if (item.category === "T1H" || item.category === "TMP") row.temperature = numberOrNull(value);
     if (item.category === "RN1") {
@@ -105,6 +148,29 @@ function normalizeItems(items, source) {
   });
 
   return Array.from(map.values()).sort((a, b) => a.datetime.localeCompare(b.datetime));
+}
+
+function getCurrentBase(nowKst) {
+  const date = new Date(nowKst);
+  // 최신 초단기실황이 아직 제공되지 않았으면 이전 시간 자료를 사용한다.
+  if (date.getUTCMinutes() < 40) {
+    date.setUTCHours(date.getUTCHours() - 1);
+  }
+  return {
+    date: formatDate(date),
+    time: pad(date.getUTCHours()) + "00",
+  };
+}
+function getUltraBase(nowKst) {
+  const date = new Date(nowKst);
+  // 초단기예보는 매시 30분 생성, 통상 45분 이후 안정적으로 조회한다.
+  if (date.getUTCMinutes() < 45) {
+    date.setUTCHours(date.getUTCHours() - 1);
+  }
+  return {
+    date: formatDate(date),
+    time: pad(date.getUTCHours()) + "30",
+  };
 }
 
 function getUltraBase(nowKst) {

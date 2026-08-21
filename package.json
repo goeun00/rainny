@@ -4,5 +4,8 @@
   "private": true,
   "devDependencies": {
     "vercel": "latest"
+  },
+  "dependencies": {
+    "three": "^0.186.0"
   }
 }

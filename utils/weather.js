@@ -7,7 +7,14 @@ function mergeForecasts(ultra, village, nowKst, limit) {
   const map = new Map();
 
   village.forEach((item) => map.set(item.datetime.slice(0, 13), item));
-  ultra.forEach((item) => map.set(item.datetime.slice(0, 13), item));
+
+  ultra.forEach((item) => {
+    const key = item.datetime.slice(0, 13);
+    map.set(key, {
+      ...map.get(key),
+      ...item,
+    });
+  });
 
   return Array.from(map.values())
     .filter((item) => item.datetime.slice(0, 13) >= nowIso)
@@ -17,6 +24,7 @@ function mergeForecasts(ultra, village, nowKst, limit) {
       datetime: item.datetime,
       timeLabel: item.time.slice(0, 2) + "시",
       pty: item.pty ?? 0,
+      pop: item.pop ?? 0,
       sky: item.sky ?? 1,
       temperature: item.temperature ?? null,
       rainMm: item.rainMm ?? 0,
@@ -44,7 +52,6 @@ function makeSummary(hours) {
     if (isRain(hour)) rainIndexes.push(index);
   });
 
-  // 앞으로 강수 없음
   if (!rainIndexes.length) {
     if (current.sky === 1) {
       return {
@@ -92,9 +99,7 @@ function makeSummary(hours) {
 
   const alreadyRaining = first === 0;
   const horizonLimited = end === null && rainIndexes[rainIndexes.length - 1] === hours.length - 1;
-
   const rainStartText = alreadyRaining ? "지금" : hours[first].timeLabel;
-
   const rainEndText = end !== null ? hours[end].timeLabel : horizonLimited ? "12시간 이후" : "확인 어려움";
 
   // 현재 눈
@@ -106,7 +111,7 @@ function makeSummary(hours) {
       description:
         end !== null
           ? hours[end].timeLabel + "쯤부터는 눈이 잦아들 것으로 보여요."
-          : "예보 범위 끝까지 눈 소식이 이어져요.",
+          : rainEndText + "까지  눈 소식이 이어져요.",
       rainStart: rainStartText,
       rainEnd: rainEndText,
       umbrella: "눈길 조심해요",
@@ -116,14 +121,12 @@ function makeSummary(hours) {
 
   return {
     headline: alreadyRaining ? "지금 비가 와요, 우산 챙겨요☔️" : hours[first].timeLabel + "쯤 비가 올 수 있어요💧",
-
     description:
       end !== null
         ? alreadyRaining
           ? hours[end].timeLabel + "쯤부터는 비가 잠잠해질 것으로 보여요."
           : rainStartText + "부터 " + rainEndText + " 전후까지 강수가 예상돼요."
-        : "예보 범위 끝까지 강수 신호가 이어져요. 그침 시각은 다음 예보에서 더 정확해져요.",
-
+        : rainEndText + "까지 비 소식이 이어져요.",
     rainStart: rainStartText,
     rainEnd: rainEndText,
     umbrella: "챙겨가요 ☂️",

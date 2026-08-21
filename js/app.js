@@ -4,18 +4,20 @@
   var locationButton = document.querySelector("#location-button");
   var locationText = document.querySelector("#location-text");
   var timeline = document.querySelector("#timeline");
-  var weatherHero = document.querySelector("#weather-hero");
   var weatherStatus = document.querySelector("#weather-status");
+  var weatherTemperature = document.querySelector(".weather-temperature .num");
   var weatherDescription = document.querySelector("#weather-description");
   var rainStart = document.querySelector("#rain-start");
   var rainEnd = document.querySelector("#rain-end");
   var umbrellaStatus = document.querySelector("#umbrella-status");
   var weatherNote = document.querySelector("#weather-note");
   var rainDrops = document.querySelector("#rain-drops");
+  var snowFlakes = document.querySelector("#snow-flakes");
   var devGuide = document.querySelector("#dev-guide");
   var devWeatherButtons = document.querySelectorAll("[data-weather-mode]");
 
   createRainDrops();
+  createSnowFlakes();
   initDevGuide();
   locationButton.addEventListener("click", requestLocation);
 
@@ -80,24 +82,28 @@
         pty: 0,
         sky: 1,
         rainMm: 0,
+        pop: 20,
         rainText: "",
       },
       cloudy: {
         pty: 0,
         sky: 4,
         rainMm: 0,
+        pop: 20,
         rainText: "",
       },
       rain: {
         pty: 1,
         sky: 4,
         rainMm: 2,
+        pop: 80,
         rainText: "2mm",
       },
       snow: {
         pty: 3,
         sky: 4,
         rainMm: 0,
+        pop: 80,
         rainText: "눈",
       },
     };
@@ -114,6 +120,7 @@
         timeLabel: String(date.getHours()).padStart(2, "0") + "시",
         temperature: 27 - Math.floor(i / 3),
         pty: preset.pty,
+        pop: preset.pop,
         sky: preset.sky,
         rainMm: preset.rainMm,
         rainText: preset.rainText,
@@ -126,6 +133,7 @@
       summary: WeatherUtils.makeSummary(hours),
     };
   }
+
   function fetchWeather(lat, lon) {
     setLoading("구름을 모으는 중...");
 
@@ -153,15 +161,14 @@
       themeColor.content = color;
     }
   }
-  updateThemeColor();
 
-  function setWeatherClass(target, weather) {
-    if (!target) return;
+  function setWeatherClass(weather) {
     var weatherClasses = ["is-sunny", "is-cloudy", "is-rainy", "is-snowy"];
     document.body.classList.remove(...weatherClasses);
     document.body.classList.add(getWeatherClass(weather));
     updateThemeColor();
   }
+  updateThemeColor();
 
   function getWeatherClass(weather) {
     var pty = Number(weather.pty || 0);
@@ -173,11 +180,15 @@
     if (sky >= 3) return "is-cloudy";
     return "is-sunny";
   }
+
   function renderWeather(data) {
     var hours = data.hours || [];
     var summary = data.summary || {};
     var now = hours[0] || {};
-    setWeatherClass(weatherHero, now);
+
+    weatherTemperature.textContent = now.temperature == null ? "--" : Math.round(Number(now.temperature));
+
+    setWeatherClass(now);
 
     weatherStatus.textContent = summary.headline || "하늘을 확인했어요!";
     weatherDescription.textContent = summary.description || "앞으로의 강수 변화를 시간별로 보여드릴게요.";
@@ -195,7 +206,7 @@
             '">' +
             (index === 0 ? "지금" : escapeHtml(hour.timeLabel)) +
             "</time>",
-          '<span class="timeline-icon" aria-hidden="true">' + getWeatherIcon(hour) + "</span>",
+          '<img src="' + escapeHtml(getWeatherIcon(hour)) + '" class="image__weather" alt="" />',
           '<span class="timeline-weather">' + escapeHtml(getWeatherLabel(hour)) + "</span>",
           '<strong class="timeline-temp">' +
             (hour.temperature == null ? "-" : escapeHtml(String(Math.round(Number(hour.temperature)))) + "°") +
@@ -220,13 +231,15 @@
   }
 
   function getWeatherIcon(hour) {
-    var pty = Number(hour.pty || 0);
-    if (pty === 3 || pty === 7) return "🌨️";
-    if (pty === 2 || pty === 6) return "🌦️";
-    if (pty > 0) return "🌧️";
-    if (Number(hour.sky) >= 4) return "☁️";
-    if (Number(hour.sky) >= 3) return "⛅";
-    return "🌤️";
+    const pty = Number(hour.pty || 0);
+
+    if (pty === 3 || pty === 7) return "../image/weather-snow-soft.png";
+    if (pty === 2 || pty === 6) return "../image/weather-sleet-soft.png";
+    if (pty > 0) return "../image/weather-rain-soft.png";
+    if (Number(hour.sky) >= 4) return "../image/weather-cloudy-soft.png";
+    if (Number(hour.sky) >= 3) return "../image/weather-partly-cloudy-soft.png";
+
+    return "./image/weather-sunny-soft.png";
   }
 
   function getWeatherLabel(hour) {
@@ -243,9 +256,15 @@
   }
 
   function getRainText(hour) {
-    if (!isRain(hour)) return "강수 없음";
-    if (hour.rainText) return escapeHtml(hour.rainText);
-    if (hour.rainMm != null) return escapeHtml(String(hour.rainMm)) + "mm";
+    if (!isRain(hour)) return "💧" + Number(hour.pop || 0) + "%";
+    if (hour.rainText) {
+      var rainText = String(hour.rainText);
+      return "💧" + escapeHtml(/mm|미만|이상/.test(rainText) ? rainText : rainText + "mm");
+    }
+    if (hour.rainMm != null) {
+      return "💧" + escapeHtml(String(hour.rainMm)) + "mm";
+    }
+
     return "강수 예상";
   }
 
@@ -264,7 +283,33 @@
     timeline.innerHTML =
       '<div class="timeline-loading"><span class="loading-cloud">☁️</span><span>잠시 뒤 다시 시도해 주세요.</span></div>';
   }
+  function createSnowFlakes() {
+    var flakes = [];
 
+    for (var i = 0; i < 24; i += 1) {
+      var left = (i * 17 + 9) % 100;
+      var delay = (i % 8) * -0.45;
+      var duration = 3 + (i % 5) * 0.45;
+      var size = 3 + (i % 3) * 2;
+      var drift = (i % 2 ? 1 : -1) * (8 + (i % 4) * 4);
+
+      flakes.push(
+        '<span class="snow-flake" style="left:' +
+          left +
+          "%;--size:" +
+          size +
+          "px;--drift:" +
+          drift +
+          "px;animation-delay:" +
+          delay +
+          "s;animation-duration:" +
+          duration +
+          's"></span>',
+      );
+    }
+
+    snowFlakes.innerHTML = flakes.join("");
+  }
   function createRainDrops() {
     var drops = [];
     for (var i = 0; i < 24; i += 1) {
@@ -310,7 +355,6 @@
     } catch (error) {
       console.error("fetchLocationName 실패:", error);
 
-      // 계속 '확인 중'으로 보이지 않게
       return "현재 위치";
     }
   }

@@ -40,7 +40,6 @@ module.exports = async function handler(req, res) {
 
     const data = JSON.parse(text);
 
-    // H = 행정동
     const region = data.documents.find(function (item) {
       return item.region_type === "H";
     });

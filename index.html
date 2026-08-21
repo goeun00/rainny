@@ -3,8 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#aeb9bd" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="theme-color" content="#9ba7ac" />
     <title>비올까? ☂️</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="image/icon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="image/icon.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="image/icon.png" />
     <link
       rel="stylesheet"
       as="style"
@@ -13,7 +18,7 @@
     />
     <link rel="stylesheet" href="/css/style.css" />
   </head>
-  <body>
+  <body class="is-cloudy">
     <main class="weather-app">
       <div class="weather-hero" id="weather-hero">
         <div class="box__visual">
@@ -38,7 +43,10 @@
           </button>
           <div class="box_village-wrap">
             <img src="image/village_basic.png" alt="" class="image_village" />
-            <img src="image/whale_basic.png" alt="" class="image_whale" />
+            <img src="image/village_snow.png" alt="" class="image_village image_village-snow" />
+            <!-- <img src="image/whale_basic.png" alt="" class="image_whale" /> -->
+            <div class="whale-viewer image_whale"></div>
+            <img src="image/whale_snow.png" alt="" class="image_whale image_whale-snow" />
             <img src="image/cloud_basic.png" alt="" class="image_cloud1 image_cloud" />
             <img src="image/cloud2_basic.png" alt="" class="image_cloud2 image_cloud" />
             <img src="image/colud3_basic.png" alt="" class="image_colud3 image_cloud" />
@@ -46,6 +54,7 @@
             <img src="image/bubble.png" alt="" class="image_bubble image_bubble2" />
             <img src="image/bubble.png" alt="" class="image_bubble image_bubble3" />
             <img src="image/moon_basic.png" alt="" class="image_moon" />
+            <img src="image/sunny.png" alt="" class="image_sunny" />
             <img src="image/planet_basic.png" alt="" class="image_planet" />
             <img src="image/planet2_basic.png" alt="" class="image_planet2" />
             <img src="image/star_basic.png" alt="" class="image_star image_star1" />
@@ -57,8 +66,10 @@
           </div>
         </div>
         <div class="rain-drops" id="rain-drops"></div>
+        <div class="snow-flakes" id="snow-flakes"></div>
 
         <div class="weather-message">
+          <h2 class="weather-temperature"><span class="num">--</span><span class="unit">°</span></h2>
           <p class="weather-status" id="weather-status">날씨를 보러 갈까요?</p>
           <p class="weather-description" id="weather-description">
             현재 위치를 알려주면 앞으로 비가 언제 오고 그치는지 찾아볼게요.
@@ -101,7 +112,6 @@
           </p>
         </section>
       </div>
-
       <section class="dev-guide" id="dev-guide">
         <div class="dev-guide__buttons" role="group">
           <span class="dev-guide__badge">DEV</span>
@@ -113,7 +123,17 @@
         </div>
       </section>
     </main>
+        <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.180.0/build/three.module.js",
+          "three/addons/": "https://unpkg.com/three@0.180.0/examples/jsm/"
+        }
+      }
+    </script>
+    <script type="module" src="./js/whale.js"></script>
     <script src="./utils/weather.js"></script>
     <script src="/js/app.js"></script>
+
   </body>
 </html>
