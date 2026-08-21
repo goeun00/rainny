@@ -1,5 +1,9 @@
 {
   "rewrites": [
-    { "source": "/api/weather", "destination": "/api/weather.js" }
+    { "source": "/api/weather", "destination": "/api/weather.js" },
+    {
+      "source": "/api/location",
+      "destination": "/api/location.js"
+    }
   ]
 }

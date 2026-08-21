@@ -23,33 +23,41 @@
 
   function requestLocation() {
     if (DEV_MODE) {
-      locationText.textContent = "서울 · DEV";
       fetchWeather(DEV_LOCATION.lat, DEV_LOCATION.lon);
+      fetchLocationName(DEV_LOCATION.lat, DEV_LOCATION.lon).then(function (name) {
+        locationText.textContent = name;
+      });
       return;
     }
-
     if (!navigator.geolocation) {
       showError("이 브라우저에서는 위치 정보를 사용할 수 없어요.");
       return;
     }
-
     setLoading("위치를 찾는 중...");
     navigator.geolocation.getCurrentPosition(
       function (position) {
-        fetchWeather(position.coords.latitude, position.coords.longitude);
+        var lat = position.coords.latitude;
+        var lon = position.coords.longitude;
+        fetchWeather(lat, lon);
+        fetchLocationName(lat, lon).then(function (name) {
+          locationText.textContent = name;
+        });
       },
       function () {
         showError("위치 권한이 필요해요. 브라우저에서 위치 접근을 허용해 주세요.");
       },
-      { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 },
+      {
+        enableHighAccuracy: false,
+        timeout: 10000,
+        maximumAge: 300000,
+      },
     );
   }
 
   function initDevGuide() {
-    if (!DEV_MODE || !devGuide) return;
-
-    devGuide.hidden = false;
-
+    if (!devGuide) return;
+    devGuide.hidden = !DEV_MODE;
+    if (!DEV_MODE) return;
     devWeatherButtons.forEach(function (button) {
       button.addEventListener("click", function () {
         var mode = button.getAttribute("data-weather-mode");
@@ -57,12 +65,10 @@
         devWeatherButtons.forEach(function (item) {
           item.classList.toggle("is-active", item === button);
         });
-
         if (mode === "api") {
           fetchWeather(DEV_LOCATION.lat, DEV_LOCATION.lon);
           return;
         }
-
         renderWeather(createDevWeather(mode));
       });
     });
@@ -74,44 +80,25 @@
         pty: 0,
         sky: 1,
         rainMm: 0,
-        headline: "오늘은 맑고 산뜻해요 ☀️",
-        description: "비 걱정 없이 가볍게 나가도 좋아요.",
-        umbrella: "안 챙겨도 돼요",
+        rainText: "",
       },
       cloudy: {
         pty: 0,
         sky: 4,
         rainMm: 0,
-        headline: "구름이 몽글몽글해요 ☁️",
-        description: "하늘은 흐리지만 당장 비 소식은 없어요.",
-        umbrella: "아직은 괜찮아요",
+        rainText: "",
       },
       rain: {
         pty: 1,
         sky: 4,
         rainMm: 2,
         rainText: "2mm",
-        headline: "지금 비가 와요 🌧️",
-        description: "한동안 비가 이어질 수 있으니 우산을 챙겨요.",
-        umbrella: "꼭 챙겨요 ☂️",
-      },
-      shower: {
-        pty: 1,
-        sky: 3,
-        rainMm: 5,
-        rainText: "5mm",
-        headline: "소나기가 후두둑 와요 🌦️",
-        description: "짧고 굵게 내릴 수 있어 작은 우산이 든든해요.",
-        umbrella: "챙겨가요 ☂️",
       },
       snow: {
         pty: 3,
         sky: 4,
-        rainMm: 1,
+        rainMm: 0,
         rainText: "눈",
-        headline: "눈이 포슬포슬 내려요 ❄️",
-        description: "길이 미끄러울 수 있으니 천천히 걸어요.",
-        umbrella: "눈 대비해요",
       },
     };
 
@@ -121,40 +108,24 @@
 
     for (var i = 0; i < 12; i += 1) {
       var date = new Date(now.getTime() + i * 60 * 60 * 1000);
-      var hourPreset = Object.assign({}, preset);
-
-      if (mode === "shower") {
-        var showerOn = i >= 2 && i <= 4;
-        hourPreset.pty = showerOn ? 1 : 0;
-        hourPreset.sky = showerOn ? 4 : 3;
-        hourPreset.rainMm = showerOn ? 5 : 0;
-        hourPreset.rainText = showerOn ? "5mm" : "";
-      }
 
       hours.push({
         datetime: date.toISOString(),
         timeLabel: String(date.getHours()).padStart(2, "0") + "시",
         temperature: 27 - Math.floor(i / 3),
-        pty: hourPreset.pty,
-        sky: hourPreset.sky,
-        rainMm: hourPreset.rainMm,
-        rainText: hourPreset.rainText || "",
+        pty: preset.pty,
+        sky: preset.sky,
+        rainMm: preset.rainMm,
+        rainText: preset.rainText,
+        source: "dev",
       });
     }
 
     return {
       hours: hours,
-      summary: {
-        headline: preset.headline,
-        description: preset.description,
-        rainStart: mode === "rain" || mode === "snow" ? "지금" : mode === "shower" ? "2시간 뒤" : "예정 없음",
-        rainEnd: mode === "rain" || mode === "snow" ? "4시간 뒤" : mode === "shower" ? "5시간 뒤" : "예정 없음",
-        umbrella: preset.umbrella,
-        horizonLimited: false,
-      },
+      summary: WeatherUtils.makeSummary(hours),
     };
   }
-
   function fetchWeather(lat, lon) {
     setLoading("구름을 모으는 중...");
 
@@ -171,13 +142,25 @@
         showError(error.message || "날씨를 불러오지 못했어요.");
       });
   }
+
+  function updateThemeColor() {
+    var color = getComputedStyle(document.body).getPropertyValue("--gradient1").trim();
+    var themeColor = document.querySelector('meta[name="theme-color"]');
+    if (!color) return;
+    document.documentElement.style.backgroundColor = color;
+    document.body.style.backgroundColor = color;
+    if (themeColor) {
+      themeColor.content = color;
+    }
+  }
+  updateThemeColor();
+
   function setWeatherClass(target, weather) {
     if (!target) return;
-
     var weatherClasses = ["is-sunny", "is-cloudy", "is-rainy", "is-snowy"];
-
-    target.classList.remove(...weatherClasses);
-    target.classList.add(getWeatherClass(weather));
+    document.body.classList.remove(...weatherClasses);
+    document.body.classList.add(getWeatherClass(weather));
+    updateThemeColor();
   }
 
   function getWeatherClass(weather) {
@@ -188,7 +171,6 @@
     if (pty === 3 || pty === 7) return "is-snowy";
     if (pty > 0 || rainMm > 0) return "is-rainy";
     if (sky >= 3) return "is-cloudy";
-
     return "is-sunny";
   }
   function renderWeather(data) {
@@ -197,7 +179,6 @@
     var now = hours[0] || {};
     setWeatherClass(weatherHero, now);
 
-    locationText.textContent = DEV_MODE ? "서울 · DEV" : "현재 위치";
     weatherStatus.textContent = summary.headline || "하늘을 확인했어요!";
     weatherDescription.textContent = summary.description || "앞으로의 강수 변화를 시간별로 보여드릴게요.";
     rainStart.textContent = summary.rainStart || "예정 없음";
@@ -310,5 +291,27 @@
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#039;");
+  }
+
+  async function fetchLocationName(lat, lon) {
+    try {
+      const response = await fetch("/api/location?lat=" + encodeURIComponent(lat) + "&lon=" + encodeURIComponent(lon));
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error("Location API Error:", data);
+        throw new Error(data.message || "위치 이름을 불러오지 못했어요.");
+      }
+
+      var region1 = data.region1.replace("특별시", "시").replace("광역시", "시");
+
+      return region1 + " " + data.region2;
+    } catch (error) {
+      console.error("fetchLocationName 실패:", error);
+
+      // 계속 '확인 중'으로 보이지 않게
+      return "현재 위치";
+    }
   }
 })();
