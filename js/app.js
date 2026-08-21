@@ -1,5 +1,5 @@
 (function () {
-  var DEV_MODE = true;
+  var DEV_MODE = false;
   var DEV_LOCATION = { name: "서울", lat: 37.5665, lon: 126.978 };
   var locationButton = document.querySelector("#location-button");
   var locationText = document.querySelector("#location-text");
